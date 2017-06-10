@@ -98,7 +98,7 @@ jq -n \
             {name: "username", value: $username},
             {name: "channel", value: $channel},
             {name: "text", value: $text},
-            {name: "attachments", value: $attachments | length}
+            {name: "attachments", value: $attachments | length | tostring}
         ]
     }' >&3
 

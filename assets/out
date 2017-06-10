@@ -111,7 +111,7 @@ jq -n \
             {name: "icon_emoji", value: $icon_emoji | tostring},
             {name: "channel", value: $channel},
             {name: "text", value: $text},
-            {name: "attachments", value: $attachments | length | tostring}
+            {name: "attachments", value: $attachments | tojson}
         ]
     }' >&3
 

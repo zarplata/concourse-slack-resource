@@ -1,0 +1,104 @@
+#!/bin/bash
+
+set -e -o pipefail
+
+cd "${1}"
+
+exec 3>&1
+exec 1>&2
+
+payload=$(mktemp /tmp/resource-in.XXXXXX)
+
+cat > "${payload}" <&0
+
+webhook_url="$(jq -r '(.source.url // "")' < "${payload}")"
+allow_insecure="$(jq -r '.source.insecure // "false"' < "${payload}")"
+raw_ca_certs=$(jq -r '.source.ca_certs // []' < $payload)
+
+username="$(jq -r '(.params.username // null)' < "${payload}")"
+icon_url="$(jq -r '(.params.icon_url // null)' < "${payload}")"
+icon_emoji="$(jq -r '(.params.icon_emoji // null)' < "${payload}")"
+channel="$(jq -r '(.params.channel // null)' < "${payload}")"
+text="$(jq '(.params.text // "")' < "${payload}")"
+attachments="$(jq -r '(.params.attachments // "")' < "${payload}")"
+
+if [ -z ${webhook_url} ]; then
+    echo "error: source.webhook_url can't be empty"
+    exit 1
+fi
+
+function evaluate {
+    echo ${1} | awk '{
+        while (match($0, /\$\([^\)]+\)/)) {
+            cmd = "jq -cn --arg cmd \"" substr($0, RSTART, RLENGTH) "\" \"\\$cmd|tostring\"" 
+            cmd | getline output
+            close(cmd)
+
+            $0 = sprintf("%s%s%s", 
+                substr($0, 0, RSTART-1), 
+                substr(output, 2, length(output)-2),
+                substr($0, RSTART+RLENGTH))
+            
+        }
+        printf $0
+    }'
+}
+
+[[ ${channel} != "null" ]] && channel=`evaluate "${channel}"`
+[[ ${text} != "null" ]] && text=`evaluate "${text}"`
+[[ ${attachments} != "null" ]]; attachments=`evaluate "${attachments}"`
+
+cert_count="$(echo $raw_ca_certs | jq -r '. | length')"
+if [[ ${cert_count} -gt 0 ]]
+then
+  cert_dir="/usr/local/share/ca-certificates/"
+  mkdir -p "$cert_dir"
+  for i in $(seq 0 $(expr "$cert_count" - 1));
+  do
+    echo $raw_ca_certs | jq -r .[$i].cert >> "${cert_dir}/ca-cert-$(echo $raw_ca_certs | jq -r .[$i].domain).crt"
+  done
+  update-ca-certificates
+fi
+
+curl_options=""
+if [[ "${allow_insecure}" == "true" ]]; then
+    curl_options="${curl_options} -k"
+fi
+
+body=$(jq -c -n \
+    --arg username "${username}" \
+    --arg icon_url "${icon_url}" \
+    --arg icon_emoji "${icon_emoji}" \
+    --arg channel "${channel}" \
+    --argjson text "${text}" \
+    --argjson attachments "${attachments}" \
+    '{
+        username: $username,
+        icon_url: $icon_url,
+        icon_emoji: $icon_emoji,
+        text: $text,
+        channel: $channel,
+        attachments: $attachments
+    }'
+)
+
+curl --fail -XPOST --data-urlencode "payload=${body}" ${curl_options} ${webhook_url}
+
+jq -n \
+    --arg ts $(date +%s) \
+    --arg username "${username}" \
+    --arg channel "${channel}" \
+    --argjson text "${text}" \
+    --argjson attachments "${attachments}" \
+    '{
+        version: {
+            timestamp: $ts
+        },
+        metadata: [
+            {name: "username", value: $username},
+            {name: "channel", value: $channel},
+            {name: "text", value: $text},
+            {name: "attachments", value: $attachments | length}
+        ]
+    }' >&3
+

@@ -1,5 +1,5 @@
 resources:
-- name: source
+- name: concourse-slack-resource
   type: git
   source:
     uri: https://github.com/zarplata/concourse-slack-resource.git 
@@ -17,12 +17,12 @@ resources:
     tag: latest
 
 jobs:
-- name: release-slack-resource
+- name: release-docker-image
   public: true
   serial: true
   plan:
-  - get: source
+  - get: concourse-slack-resource
     trigger: true
   - put: docker-hub
-    params: {build: source}
+    params: {build: concourse-slack-resource}
 

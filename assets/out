@@ -55,7 +55,7 @@ function evaluate {
 
 [[ ${channel} != "null" ]] && channel=`evaluate "${channel}"`
 [[ ${text} != "null" ]] && text=`evaluate "${text}"`
-[[ ${attachments} != "null" ]]; attachments=`evaluate "${attachments}"`
+[[ ${attachments} != "null" ]] && attachments=`evaluate "${attachments}"`
 
 cert_count="$(echo $raw_ca_certs | jq -r '. | length')"
 if [[ ${cert_count} -gt 0 ]]
@@ -114,4 +114,3 @@ jq -n \
             {name: "attachments", value: $attachments | tojson}
         ]
     }' >&3
-

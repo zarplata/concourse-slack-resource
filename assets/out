@@ -20,7 +20,7 @@ icon_url="$(jq '(.params.icon_url // null)' < "${payload}")"
 icon_emoji="$(jq '(.params.icon_emoji // null)' < "${payload}")"
 channel="$(jq -r '(.params.channel // null)' < "${payload}")"
 text="$(jq '(.params.text // "")' < "${payload}")"
-attachments="$(jq -r '(.params.attachments // "")' < "${payload}")"
+attachments="$(jq -r '(.params.attachments // null)' < "${payload}")"
 
 if [ -z ${webhook_url} ]; then
     echo "error: source.webhook_url can't be empty"

@@ -23,7 +23,7 @@ text="$(jq '(.params.text // "")' < "${payload}")"
 attachments="$(jq -r '(.params.attachments // null)' < "${payload}")"
 
 if [ -z ${webhook_url} ]; then
-    echo "error: source.webhook_url can't be empty"
+    echo "error: source.url can't be empty"
     exit 1
 fi
 

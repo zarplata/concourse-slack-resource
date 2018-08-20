@@ -70,8 +70,8 @@ fi
 
 body=$(jq -c -n \
     --arg username "${username}" \
-    --arg icon_url "${icon_url}" \
-    --arg icon_emoji "${icon_emoji}" \
+    --argjson icon_url "${icon_url}" \
+    --argjson icon_emoji "${icon_emoji}" \
     --arg channel "${channel}" \
     --argjson text "${text}" \
     --argjson attachments "${attachments}" \
@@ -90,8 +90,8 @@ curl --fail -XPOST --data-urlencode "payload=${body}" ${curl_options} ${webhook_
 jq -n \
     --arg ts $(date +%s) \
     --arg username "${username}" \
-    --arg icon_url "${icon_url}" \
-    --arg icon_emoji "${icon_emoji}" \
+    --argjson icon_url "${icon_url}" \
+    --argjson icon_emoji "${icon_emoji}" \
     --arg channel "${channel}" \
     --argjson text "${text}" \
     --argjson attachments "${attachments}" \

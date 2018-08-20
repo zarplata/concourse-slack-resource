@@ -29,7 +29,7 @@ fi
 
 function evaluate {
     echo ${1} | awk '{
-        while (match( $0, /[^\\]\$\([^\)]+\)/ )) {
+        while (match( $0, /\$\([^\)]+\)/ )) {
             cmd = "jq -cn --arg cmd \"" substr($0, RSTART, RLENGTH) "\" \"\\$cmd|tostring\"" 
             cmd | getline output
             close(cmd)
@@ -39,7 +39,7 @@ function evaluate {
                 substr(output, 2, length(output)-2),
                 substr($0, RSTART+RLENGTH))
         }
-        while (match( $0, /[^\\]\$([0-9a-zA-Z\_\_]+|\{[0-9a-zA-Z\_\_]+\})/ )) {
+        while (match( $0, /\$([0-9a-zA-Z\_\_]+|\{[0-9a-zA-Z\_\_]+\})/ )) {
             cmd = "jq -cn --arg cmd \"\$(echo " substr($0, RSTART, RLENGTH) "\)\" \"\\$cmd|tostring\"" 
             cmd | getline output
             close(cmd)
@@ -49,7 +49,6 @@ function evaluate {
                 substr(output, 2, length(output)-2),
                 substr($0, RSTART+RLENGTH))
         }
-	gsub(/\\\$/, $0)
         printf $0
     }'
 }

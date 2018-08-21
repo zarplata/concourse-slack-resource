@@ -31,21 +31,23 @@ function evaluate {
     echo ${1} | awk '{
 		line = ""
 		while (match($0, /\$\([^\)]+\)|\$\w+|\$\{\w+\}/)) {
-			if (match($0, /\$\w+|\$\{\w+\}/)) {
-				cmd = "jq -cn --arg cmd \"$(echo " substr($0, RSTART, RLENGTH) ")\" \"\\$cmd|tostring\""
-			} else if (match($0, /\$\([^\)]+\)/)) {
-				cmd = "jq -cn --arg cmd \"" substr($0, RSTART, RLENGTH) "\" \"\\$cmd|tostring\"" 
+			term = substr($0, RSTART, RLENGTH)
+			line = line substr($0, 0, RSTART-1)
+			$0 = substr($0, RSTART+RLENGTH)
+
+			if (match(term, /\$\w+|\$\{\w+\}/)) {
+				cmd = "jq -cn --arg cmd \"$(echo " term ")\" \"\\$cmd|tostring\""
+			} else if (match(term, /\$\([^\)]+\)/)) {
+				cmd = "jq -cn --arg cmd \"" term "\" \"\\$cmd|tostring\""
 			} else {
-				break
+				continue
 			}
 
 			cmd | getline output
 			close(cmd)
-
-			line = sprintf("%s%s%s", line, substr($0, 0, RSTART-1), substr(output, 2, length(output) - 2))
-			$0 = substr($0, RSTART+RLENGTH)
+			line = line substr(output, 2, length(output) - 2)
 		}
-		printf("%s%s", line, $0)
+		print line $0
     }'
 }
 
